@@ -1,0 +1,18 @@
+{
+  "email": "23f2005452@ds.study.iitm.ac.in",
+  "secret": "VinaySaw@2025",
+  "task": "markdown-to-html-page",
+  "round": 1,
+  "nonce": "a8c7b6e5-d4f3-2e1a-b0c9-d8e7f6a5b4c3",
+  "brief": "Make all the buttons and tabs functional in the markdown to HTML converter page.",
+  "checks": [
+    "The page must load with the markdown input area visible by default",
+    "The #markdown-tabs must switch between the original Markdown and the rendered HTML",
+    "The #markdown-output must update when the #markdown-source changes",
+    "Add a button to preview the rendered HTML in a new tab",
+    "It must have two sections: #markdown-input and #HTML-output",
+    "It must have a button to convert markdown to HTML"
+  ],
+  "evaluation_url": "",
+  "attachments": []
+}

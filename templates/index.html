@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Application Builder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .checks-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .check-item input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            display: none;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .result.active {
+            display: block;
+        }
+
+        .result.success {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+        }
+
+        .result h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .result-links {
+            margin-top: 15px;
+        }
+
+        .result-links a {
+            display: inline-block;
+            margin-right: 15px;
+            padding: 10px 20px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .result-links a:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .round-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .round-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .round-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .round-btn:hover {
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 LLM Application Builder</h1>
+            <p>Build and deploy web applications automatically with AI</p>
+        </div>
+
+        <div class="content">
+            <div class="info-box">
+                <strong>ℹ️ How it works:</strong> Provide your requirements, and our AI will generate a complete web application, deploy it to GitHub Pages, and run automated checks.
+            </div>
+
+            <form id="buildForm">
+                <div class="form-group">
+                    <label>Round</label>
+                    <div class="round-selector">
+                        <button type="button" class="round-btn active" data-round="1">
+                            Round 1 (Initial Build)
+                        </button>
+                        <button type="button" class="round-btn" data-round="2">
+                            Round 2 (Revision)
+                        </button>
+                    </div>
+                    <input type="hidden" id="round" name="round" value="1">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address *</label>
+                    <input type="email" id="email" name="email" required placeholder="student@example.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="secret">Secret Key *</label>
+                    <input type="password" id="secret" name="secret" required placeholder="Enter your secret key">
+                </div>
+
+                <div class="form-group">
+                    <label for="task">Task Title *</label>
+                    <input type="text" id="task" name="task" required placeholder="e.g., Todo List Application">
+                </div>
+
+                <div class="form-group">
+                    <label for="brief">Task Brief *</label>
+                    <textarea id="brief" name="brief" required placeholder="Describe what the application should do in detail..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Requirements Checks</label>
+                    <div class="checks-container">
+                        <div class="check-item">
+                            <input type="checkbox" id="check1" checked>
+                            <label for="check1">Repo has MIT license</label>
+                        </div>
+                        <div class="check-item">
+                            <input type="checkbox" id="check2" checked>
+                            <label for="check2">README.md is professionally formatted</label>
+                        </div>
+                        <div class="check-item">
+                            <input type="checkbox" id="check3" checked>
+                            <label for="check3">README.md contains setup instructions</label>
+                        </div>
+                        <div class="check-item">
+                            <input type="checkbox" id="check4" checked>
+                            <label for="check4">README.md contains usage instructions</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="nonce">Nonce (Optional)</label>
+                    <input type="text" id="nonce" name="nonce" placeholder="ab12-...">
+                </div>
+
+                <div class="form-group">
+                    <label for="evaluation_url">Evaluation URL (Optional)</label>
+                    <input type="text" id="evaluation_url" name="evaluation_url" placeholder="https://example.com/evaluate">
+                </div>
+
+                <button type="submit" class="btn" id="submitBtn">
+                    🚀 Build & Deploy Application
+                </button>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p><strong>Building your application...</strong></p>
+                <p>This may take 30-60 seconds. Please wait.</p>
+            </div>
+
+            <div class="result" id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Round selector
+        document.querySelectorAll('.round-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.round-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById('round').value = this.dataset.round;
+            });
+        });
+
+        // Form submission
+        document.getElementById('buildForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+
+            // Get form data
+            const formData = {
+                email: document.getElementById('email').value,
+                secret: document.getElementById('secret').value,
+                task: document.getElementById('task').value,
+                brief: document.getElementById('brief').value,
+                round: parseInt(document.getElementById('round').value),
+                nonce: document.getElementById('nonce').value || `nonce-${Date.now()}`,
+                evaluation_url: document.getElementById('evaluation_url').value,
+                checks: []
+            };
+
+            // Get selected checks
+            document.querySelectorAll('.check-item input[type="checkbox"]:checked').forEach(checkbox => {
+                formData.checks.push(checkbox.nextElementSibling.textContent);
+            });
+
+            // Show loading
+            submitBtn.disabled = true;
+            loading.classList.add('active');
+            result.classList.remove('active');
+
+            try {
+                const response = await fetch('/api/build', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                // Hide loading
+                loading.classList.remove('active');
+                submitBtn.disabled = false;
+
+                // Show result
+                result.classList.add('active');
+
+                if (data.status === 'success') {
+                    result.classList.add('success');
+                    result.classList.remove('error');
+                    result.innerHTML = `
+                        <h3>✅ ${data.message}</h3>
+                        <p><strong>Project ID:</strong> ${data.project_id}</p>
+                        <p><strong>Round:</strong> ${data.round}</p>
+                        <div class="result-links">
+                            <a href="${data.repo_url}" target="_blank">📦 View Repository</a>
+                            <a href="${data.pages_url}" target="_blank">🌐 View Live Site</a>
+                        </div>
+                        <p style="margin-top: 15px;"><small>Note: GitHub Pages may take 1-2 minutes to build and deploy.</small></p>
+                    `;
+                } else {
+                    result.classList.add('error');
+                    result.classList.remove('success');
+                    result.innerHTML = `
+                        <h3>❌ Error</h3>
+                        <p>${data.message}</p>
+                    `;
+                }
+            } catch (error) {
+                loading.classList.remove('active');
+                submitBtn.disabled = false;
+                result.classList.add('active', 'error');
+                result.classList.remove('success');
+                result.innerHTML = `
+                    <h3>❌ Error</h3>
+                    <p>Failed to build application: ${error.message}</p>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
