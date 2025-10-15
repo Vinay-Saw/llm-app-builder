@@ -48,11 +48,9 @@ This application serves as a powerful backend service that automates the entire 
 ├── app.py                # Main Flask application with all core logic
 ├── requirements.txt      # Python dependencies for the project
 ├── procfile.txt          # Configuration for deploying to cloud services like Heroku
-├── .env                  # File for storing secret API keys (DO NOT COMMIT)
 ├── test_request.py       # Script for testing the /api/build endpoint
 ├── test_aipipe.py        # Diagnostic script to test the aipipe.org API connection
-├── round_1_request.json  # Example JSON request for an initial build
-├── round_2_request.json  # Example JSON request for a revision
+├── sample_request.json   # Example JSON request for an initial build
 └── templates/
     └── index.html        # Simple frontend for the service (optional)
 ```
@@ -136,21 +134,17 @@ Use a tool like `curl` to send a JSON request to the build endpoint.
 This command will create a new application.
 
 ```bash
-curl -X POST http://localhost:5000/api/build \
--H "Content-Type: application/json" \
--d @round_1_request.json
+curl -X POST https://llm-app-by-vinay.onrender.com/api/build -H "Content-Type: application/json" -d @sample_request.json
 ```
 
 You will receive an immediate response with a `project_id`.
 
 #### Round 2: Revise the Application
 
-After the first round is complete, send the second request to modify the application.
+After the first round is complete, send the second request to modify the application. *Specify "Round":2*
 
 ```bash
-curl -X POST http://localhost:5000/api/build \
--H "Content-Type: application/json" \
--d @round_2_request.json
+curl -X POST https://llm-app-by-vinay.onrender.com/api/build -H "Content-Type: application/json" -d @sample_request.json
 ```
 
 ### 3. Check the Status
