@@ -467,7 +467,7 @@ def build_application():
             'status': 'success',
             'message': 'Build process initiated successfully. Check status endpoint for updates.',
             'project_id': project_id
-        }), 202
+        }), 200
         
     except Exception as e:
         print(f"Error: {str(e)}")
