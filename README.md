@@ -134,7 +134,7 @@ Use a tool like `curl` to send a JSON request to the build endpoint.
 This command will create a new application.
 
 ```bash
-curl -X POST https://llm-app-by-vinay.onrender.com/api/build -H "Content-Type: application/json" -d @sample_request.json
+curl -X POST https://llm-app-builder-production.up.railway.app/api/build -H "Content-Type: application/json" -d @sample_request.json
 ```
 
 You will receive an immediate response with a `project_id`.
@@ -144,7 +144,7 @@ You will receive an immediate response with a `project_id`.
 After the first round is complete, send the second request to modify the application. *Specify "Round":2*
 
 ```bash
-curl -X POST https://llm-app-by-vinay.onrender.com/api/build -H "Content-Type: application/json" -d @sample_request.json
+curl -X POST https://llm-app-builder-production.up.railway.app/api/build -H "Content-Type: application/json" -d @sample_request.json
 ```
 
 ### 3. Check the Status
@@ -204,3 +204,4 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
