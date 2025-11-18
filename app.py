@@ -36,10 +36,10 @@ def verify_secret(provided_secret):
 
 def generate_app_with_llm(brief, task, checks, attachments=None, existing_code=None, revision_request=None):
     """Generate application code using aipipe.org"""
-    
+
     if not AIPIPE_API_KEY:
         raise Exception("AIPipe API key not configured")
-    
+
     # Prepare attachment context
     attachment_context = ""
     if attachments:
@@ -102,21 +102,21 @@ IMPORTANT: The HTML should be self-contained with CSS in <style> tags and JS in 
             "Authorization": f"Bearer {AIPIPE_API_KEY}",
             "Content-Type": "application/json"
         }
-        
+
         payload = {
             "model": "openai/gpt-4o-mini",
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 8000
         }
-        
+
         response = requests.post(AIPIPE_API_URL, headers=headers, json=payload)
         response.raise_for_status()
-        
+
         response_data = response.json()
-        
+
         # Extract JSON from response
         content = response_data["choices"][0]["message"]["content"]
-        
+
         # Try to extract JSON from markdown code blocks
         if "```json" in content:
             json_start = content.find("```json") + 7
@@ -139,9 +139,9 @@ IMPORTANT: The HTML should be self-contained with CSS in <style> tags and JS in 
             except json.JSONDecodeError as e2:
                 print(f"JSON parse failed after repair: {e2}. Repaired content: {json_str}")
                 raise Exception(f"Failed to parse LLM response: {e2}")
-            
+
         return code_data
-        
+
     except Exception as e:
         print(f"LLM Error: {str(e)}")
         raise Exception(f"Failed to generate code: {str(e)}")
@@ -150,42 +150,42 @@ def repair_json_string(json_str):
     """Attempt to repair a broken JSON string"""
     # This is a very common error. LLMs often use single quotes.
     repaired_str = json_str.replace("'", '"')
-    
+
     # Attempt to fix unterminated strings by adding a closing quote
     if repaired_str.count('"') % 2 != 0:
         repaired_str += '"'
-        
+
     # Find the last valid closing brace or bracket
     last_brace = repaired_str.rfind('}')
     last_bracket = repaired_str.rfind(']')
-    
+
     if last_brace == -1 and last_bracket == -1:
         raise ValueError("Invalid JSON: No closing brace or bracket found.")
-        
+
     # Truncate to the last valid closing character
     if last_brace > last_bracket:
         repaired_str = repaired_str[:last_brace+1]
     else:
         repaired_str = repaired_str[:last_bracket+1]
-        
+
     # Ensure the structure is closed
     open_braces = repaired_str.count('{')
     close_braces = repaired_str.count('}')
-    
+
     if open_braces > close_braces:
         repaired_str += '}' * (open_braces - close_braces)
-        
+
     return repaired_str
 
 def create_github_repo(repo_name, code_data, email, attachments=None):
     """Create GitHub repository and deploy to Pages"""
-    
+
     if not github_client:
         raise Exception("GitHub token not configured")
-    
+
     try:
         user = github_client.get_user()
-        
+
         # Create repository
         try:
             repo = user.create_repo(
@@ -201,7 +201,7 @@ def create_github_repo(repo_name, code_data, email, attachments=None):
                 repo = user.get_repo(repo_name)
             else:
                 raise e
-        
+
         # --- Create or update files ---
         files_to_commit = {
             "index.html": code_data.get('html', ''),
@@ -236,7 +236,7 @@ SOFTWARE.''')
                 url = attachment.get('url')
                 if not name or not url:
                     continue
-                
+
                 try:
                     # Decode data URI
                     header, encoded = url.split(',', 1)
@@ -253,19 +253,19 @@ SOFTWARE.''')
                 # Check if file exists to update it
                 existing_file = repo.get_contents(path, ref="main")
                 update_result = repo.update_file(
-                    path, 
-                    f"Update {path}", 
-                    content, 
-                    existing_file.sha, 
+                    path,
+                    f"Update {path}",
+                    content,
+                    existing_file.sha,
                     branch="main"
                 )
                 commit_sha = update_result['commit'].sha
             except Exception:
                 # Create file if it does not exist
                 create_result = repo.create_file(
-                    path, 
-                    f"Create {path}", 
-                    content, 
+                    path,
+                    f"Create {path}",
+                    content,
                     branch="main"
                 )
                 commit_sha = create_result['commit'].sha
@@ -286,17 +286,17 @@ SOFTWARE.''')
             requests.post(pages_url, json=payload, headers=headers)
         except Exception as e:
             print(f"Pages setup: {str(e)}")
-        
+
         repo_url = repo.html_url
         pages_url = f"https://{user.login}.github.io/{repo_name}"
-        
+
         return {
             "repo_url": repo_url,
             "pages_url": pages_url,
             "commit_sha": commit_sha,
             "success": True
         }
-        
+
     except Exception as e:
         print(f"GitHub Error: {str(e)}")
         raise Exception(f"Failed to create repository: {str(e)}")
@@ -309,14 +309,14 @@ def run_checks(pages_url, checks):
         "checks_failed": [],
         "timestamp": datetime.now().isoformat()
     }
-    
+
     return results
 
 def notify_evaluation_service(evaluation_url, payload):
     """Notify the evaluation service with retry logic"""
     max_retries = 5
     delay = 1  # Initial delay in seconds
-    
+
     for attempt in range(max_retries):
         try:
             print(f"Notifying evaluation URL: {evaluation_url} (Attempt {attempt + 1})")
@@ -345,19 +345,19 @@ def process_build_request(data):
         nonce = data.get('nonce', f'nonce-{int(time.time())}')
         evaluation_url = data.get('evaluation_url')
         attachments = data.get('attachments', [])
-        
+
         # Generate unique project ID
         project_id = hashlib.md5(f"{email}{nonce}{task}".encode()).hexdigest()[:12]
-        
+
         # Check if this is a revision (Round 2)
         existing_project = projects_db.get(project_id)
         existing_code = None
         revision_request = None
-        
+
         if round_num == 2 and existing_project:
             existing_code = existing_project.get('code', {}).get('html', '')
             revision_request = brief
-        
+
         # Generate application code using LLM
         print(f"Generating application for: {task}")
         code_data = generate_app_with_llm(
@@ -368,20 +368,20 @@ def process_build_request(data):
             existing_code=existing_code,
             revision_request=revision_request
         )
-        
+
         # Create repository name (sanitize)
         repo_name_base = task.lower().replace(' ', '-').replace('_', '-')
         repo_name_base = ''.join(c for c in repo_name_base if c.isalnum() or c == '-')
         repo_name = f"{repo_name_base}-{project_id}"
-        
+
         # Deploy to GitHub Pages
         print(f"Deploying to GitHub: {repo_name}")
         deployment = create_github_repo(repo_name, code_data, email, attachments)
-        
+
         # Run checks
         print(f"Running checks on: {deployment['pages_url']}")
         check_results = run_checks(deployment['pages_url'], checks)
-        
+
         # Store project data
         projects_db[project_id] = {
             'email': email,
@@ -394,7 +394,7 @@ def process_build_request(data):
             'status': 'completed',
             'created_at': datetime.now().isoformat()
         }
-        
+
         # Notify evaluation URL if provided
         if evaluation_url:
             notification_payload = {
@@ -408,7 +408,7 @@ def process_build_request(data):
                 'checks': check_results
             }
             notify_evaluation_service(evaluation_url, notification_payload)
-            
+
     except Exception as e:
         print(f"Error in background thread: {str(e)}")
         project_id = hashlib.md5(f"{data.get('email')}{data.get('nonce')}{data.get('task')}".encode()).hexdigest()[:12]
@@ -428,7 +428,7 @@ def build_application():
     """Main endpoint to build and deploy application"""
     try:
         data = request.get_json()
-        
+
         # Extract required fields for validation
         email = data.get('email')
         secret = data.get('secret')
@@ -442,21 +442,21 @@ def build_application():
                 'status': 'error',
                 'message': 'Missing required fields: email, secret, task, brief, and nonce are required'
             }), 400
-        
+
         # Verify secret
         if not verify_secret(secret):
             return jsonify({
                 'status': 'error',
                 'message': 'Invalid secret key'
             }), 401
-        
+
         # Check API configuration
         if not AIPIPE_API_KEY or not GITHUB_TOKEN:
             return jsonify({
                 'status': 'error',
                 'message': 'Server configuration error: API keys not set'
             }), 500
-        
+
         # Generate unique project ID
         project_id = hashlib.md5(f"{email}{nonce}{task}".encode()).hexdigest()[:12]
 
@@ -477,7 +477,7 @@ def build_application():
             'message': 'Build process initiated successfully. Check status endpoint for updates.',
             'project_id': project_id
         }), 200
-        
+
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({
@@ -489,17 +489,23 @@ def build_application():
 def get_project_status(project_id):
     """Get project status"""
     project = projects_db.get(project_id)
-    
+
     if not project:
         return jsonify({
             'status': 'error',
             'message': 'Project not found'
         }), 404
-    
-    return jsonify({
-        'status': 'success',
-        'project': project
-    }), 200
+
+    response_data = {'status': project.get('status')}
+
+    if project.get('status') == 'completed':
+        deployment = project.get('deployment', {})
+        response_data['repo_url'] = deployment.get('repo_url')
+        response_data['pages_url'] = deployment.get('pages_url')
+    elif project.get('status') == 'failed':
+        response_data['message'] = project.get('message')
+
+    return jsonify(response_data), 200
 
 @app.route('/api/projects', methods=['GET'])
 def list_projects():
