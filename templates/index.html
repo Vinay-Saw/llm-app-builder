@@ -317,6 +317,11 @@
                     <input type="text" id="evaluation_url" name="evaluation_url" placeholder="https://example.com/evaluate">
                 </div>
 
+                <div class="form-group">
+                    <label for="attachments">Attachments (Optional)</label>
+                    <input type="file" id="attachments" name="attachments" multiple>
+                </div>
+
                 <button type="submit" class="btn" id="submitBtn">
                     🚀 Build & Deploy Application
                 </button>
@@ -341,6 +346,59 @@
                 document.getElementById('round').value = this.dataset.round;
             });
         });
+
+        let pollingInterval;
+
+        function pollStatus(projectId) {
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+
+            pollingInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/status/${projectId}`);
+                    const data = await response.json();
+
+                    if (data.status === 'success' && data.project.status === 'completed') {
+                        clearInterval(pollingInterval);
+                        loading.classList.remove('active');
+                        submitBtn.disabled = false;
+                        result.classList.add('active', 'success');
+                        result.classList.remove('error');
+                        result.innerHTML = `
+                            <h3>✅ Build Completed!</h3>
+                            <p><strong>Project ID:</strong> ${data.project.project_id}</p>
+                            <p><strong>Round:</strong> ${data.project.round}</p>
+                            <div class="result-links">
+                                <a href="${data.project.deployment.repo_url}" target="_blank">📦 View Repository</a>
+                                <a href="${data.project.deployment.pages_url}" target="_blank">🌐 View Live Site</a>
+                            </div>
+                            <p style="margin-top: 15px;"><small>Note: GitHub Pages may take 1-2 minutes to build and deploy.</small></p>
+                        `;
+                    } else if (data.status === 'success' && data.project.status === 'failed') {
+                        clearInterval(pollingInterval);
+                        loading.classList.remove('active');
+                        submitBtn.disabled = false;
+                        result.classList.add('active', 'error');
+                        result.classList.remove('success');
+                        result.innerHTML = `
+                            <h3>❌ Error</h3>
+                            <p>${data.project.message}</p>
+                        `;
+                    }
+                } catch (error) {
+                    clearInterval(pollingInterval);
+                    loading.classList.remove('active');
+                    submitBtn.disabled = false;
+                    result.classList.add('active', 'error');
+                    result.classList.remove('success');
+                    result.innerHTML = `
+                        <h3>❌ Error</h3>
+                        <p>Failed to get build status: ${error.message}</p>
+                    `;
+                }
+            }, 2000);
+        }
 
         // Form submission
         document.getElementById('buildForm').addEventListener('submit', async function(e) {
@@ -373,6 +431,22 @@
             result.classList.remove('active');
 
             try {
+                // Handle attachments
+                const attachmentFiles = document.getElementById('attachments').files;
+                const attachmentPromises = Array.from(attachmentFiles).map(file => {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve({ name: file.name, url: e.target.result });
+                        reader.onerror = (e) => reject(new Error(`Failed to read file: ${file.name}`));
+                        reader.readAsDataURL(file);
+                    });
+                });
+
+                const attachments = await Promise.all(attachmentPromises);
+                if (attachments.length > 0) {
+                    formData.attachments = attachments;
+                }
+
                 const response = await fetch('/api/build', {
                     method: 'POST',
                     headers: {
@@ -383,32 +457,18 @@
 
                 const data = await response.json();
 
-                // Hide loading
-                loading.classList.remove('active');
-                submitBtn.disabled = false;
-
-                // Show result
-                result.classList.add('active');
-
-                if (data.status === 'success') {
-                    result.classList.add('success');
-                    result.classList.remove('error');
-                    result.innerHTML = `
-                        <h3>✅ ${data.message}</h3>
-                        <p><strong>Project ID:</strong> ${data.project_id}</p>
-                        <p><strong>Round:</strong> ${data.round}</p>
-                        <div class="result-links">
-                            <a href="${data.repo_url}" target="_blank">📦 View Repository</a>
-                            <a href="${data.pages_url}" target="_blank">🌐 View Live Site</a>
-                        </div>
-                        <p style="margin-top: 15px;"><small>Note: GitHub Pages may take 1-2 minutes to build and deploy.</small></p>
-                    `;
+                if (data.status === 'success' && data.project_id) {
+                    // Build started, begin polling
+                    pollStatus(data.project_id);
                 } else {
-                    result.classList.add('error');
+                    // Initial request failed, show error immediately
+                    loading.classList.remove('active');
+                    submitBtn.disabled = false;
+                    result.classList.add('active', 'error');
                     result.classList.remove('success');
                     result.innerHTML = `
                         <h3>❌ Error</h3>
-                        <p>${data.message}</p>
+                        <p>${data.message || 'Failed to start build.'}</p>
                     `;
                 }
             } catch (error) {

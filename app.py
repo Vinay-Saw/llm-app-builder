@@ -40,6 +40,12 @@ def generate_app_with_llm(brief, task, checks, attachments=None, existing_code=N
     if not AIPIPE_API_KEY:
         raise Exception("AIPipe API key not configured")
     
+    # Prepare attachment context
+    attachment_context = ""
+    if attachments:
+        file_names = [attachment['name'] for attachment in attachments]
+        attachment_context = f"\n\nThe following files are available in the root directory of the application: {', '.join(file_names)}. You MUST write code to utilize these files if relevant to the task (e.g., load the CSV data)."
+
     # Build the prompt
     if existing_code:
         prompt = f"""You are an expert web developer. Update the existing application based on the revision request.
@@ -48,6 +54,8 @@ REVISION REQUEST: {revision_request}
 
 EXISTING CODE:
 {existing_code}
+
+{attachment_context}
 
 REQUIREMENTS:
 {chr(10).join(f'- {check}' for check in checks)}
@@ -64,6 +72,7 @@ Please provide the COMPLETE updated code with all files. Return a JSON object wi
 
 TASK: {task}
 BRIEF: {brief}
+{attachment_context}
 REQUIREMENTS:
 {chr(10).join(f'- {check}' for check in checks)}
 
