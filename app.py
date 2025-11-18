@@ -60,19 +60,13 @@ EXISTING CODE:
 REQUIREMENTS:
 {chr(10).join(f'- {check}' for check in checks)}
 
-Your output MUST be a single, valid JSON object. The keys of the JSON object must be the filenames.
-- **CRITICAL:** All double quotes inside the file content MUST be escaped (e.g., `\"class=\\"btn\\\"\"`).
-
-Example of final output format:
-```json
+Please provide the COMPLETE updated code with all files. Return a JSON object with this structure:
 {{
-  "index.html": "<!DOCTYPE html>...",
-  "style.css": "body {{ font-family: sans-serif; }}",
-  "script.js": "console.log(\\"Hello, World!\\");",
-  "README.md": "# Project Title...",
-  "LICENSE": "MIT License..."
-}}
-```"""
+  "html": "complete HTML code",
+  "css": "complete CSS code (if separate)",
+  "js": "complete JavaScript code (if separate)",
+  "readme": "README.md content"
+}}"""
     else:
         prompt = f"""You are an expert web developer. Your task is to generate a complete, production-ready web application based on the provided brief.
 
@@ -82,17 +76,14 @@ BRIEF: {brief}
 REQUIREMENTS:
 {chr(10).join(f'- {check}' for check in checks)}
 
-Your output MUST be a single, valid JSON object. The keys of the JSON object must be the filenames.
-- **CRITICAL:** All double quotes inside the file content MUST be escaped (e.g., `\"class=\\"btn\\\"\"`).
+Your output MUST be a single, valid JSON object. Use json.dumps() to ensure correctness. The JSON object must have keys "html", "readme", and "license".
 
 Example of final output format:
 ```json
 {{
-  "index.html": "<!DOCTYPE html>...",
-  "style.css": "body {{ font-family: sans-serif; }}",
-  "script.js": "console.log(\\"Hello, World!\\");",
-  "README.md": "# Project Title...",
-  "LICENSE": "MIT License..."
+  "html": "<!DOCTYPE html>...",
+  "readme": "# Project Title...",
+  "license": "MIT License..."
 }}
 ```
 
@@ -156,8 +147,13 @@ IMPORTANT: The HTML should be self-contained with CSS in <style> tags and JS in 
         raise Exception(f"Failed to generate code: {str(e)}")
 
 def repair_json_string(json_str):
-    """Attempt to repair a broken JSON string without replacing single quotes."""
-    repaired_str = json_str.strip()
+    """Attempt to repair a broken JSON string"""
+    # This is a very common error. LLMs often use single quotes.
+    repaired_str = json_str.replace("'", '"')
+
+    # Attempt to fix unterminated strings by adding a closing quote
+    if repaired_str.count('"') % 2 != 0:
+        repaired_str += '"'
 
     # Find the last valid closing brace or bracket
     last_brace = repaired_str.rfind('}')
@@ -175,13 +171,9 @@ def repair_json_string(json_str):
     # Ensure the structure is closed
     open_braces = repaired_str.count('{')
     close_braces = repaired_str.count('}')
+
     if open_braces > close_braces:
         repaired_str += '}' * (open_braces - close_braces)
-
-    open_brackets = repaired_str.count('[')
-    close_brackets = repaired_str.count(']')
-    if open_brackets > close_brackets:
-        repaired_str += ']' * (open_brackets - close_brackets)
 
     return repaired_str
 
@@ -212,8 +204,29 @@ def create_github_repo(repo_name, code_data, email, attachments=None):
 
         # --- Create or update files ---
         files_to_commit = {
-            filename: content
-            for filename, content in code_data.items()
+            "index.html": code_data.get('html', ''),
+            "README.md": code_data.get('readme', '# Project\n\nAuto-generated application'),
+            "LICENSE": code_data.get('license', f'''MIT License
+
+Copyright (c) 2025 {user.login}
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.''')
         }
 
         # Add attachments to the commit list
@@ -483,10 +496,16 @@ def get_project_status(project_id):
             'message': 'Project not found'
         }), 404
 
-    return jsonify({
-        'status': 'success',
-        'project': project
-    }), 200
+    response_data = {'status': project.get('status')}
+
+    if project.get('status') == 'completed':
+        deployment = project.get('deployment', {})
+        response_data['repo_url'] = deployment.get('repo_url')
+        response_data['pages_url'] = deployment.get('pages_url')
+    elif project.get('status') == 'failed':
+        response_data['message'] = project.get('message')
+
+    return jsonify(response_data), 200
 
 @app.route('/api/projects', methods=['GET'])
 def list_projects():
