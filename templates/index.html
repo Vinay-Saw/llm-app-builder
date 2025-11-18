@@ -317,6 +317,11 @@
                     <input type="text" id="evaluation_url" name="evaluation_url" placeholder="https://example.com/evaluate">
                 </div>
 
+                <div class="form-group">
+                    <label for="attachments">Attachments (Optional)</label>
+                    <input type="file" id="attachments" name="attachments" multiple>
+                </div>
+
                 <button type="submit" class="btn" id="submitBtn">
                     🚀 Build & Deploy Application
                 </button>
@@ -373,6 +378,22 @@
             result.classList.remove('active');
 
             try {
+                // Handle attachments
+                const attachmentFiles = document.getElementById('attachments').files;
+                const attachmentPromises = Array.from(attachmentFiles).map(file => {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve({ name: file.name, url: e.target.result });
+                        reader.onerror = (e) => reject(new Error(`Failed to read file: ${file.name}`));
+                        reader.readAsDataURL(file);
+                    });
+                });
+
+                const attachments = await Promise.all(attachmentPromises);
+                if (attachments.length > 0) {
+                    formData.attachments = attachments;
+                }
+
                 const response = await fetch('/api/build', {
                     method: 'POST',
                     headers: {
