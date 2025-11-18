@@ -16,7 +16,7 @@ def test_round_1():
     print("=" * 60)
     print("TESTING ROUND 1: Initial Application Build")
     print("=" * 60)
-    
+
     request_data = {
         "email": "student@example.com",
         "secret": SECRET_KEY,
@@ -53,21 +53,21 @@ The application should be production-ready with clean, well-structured code.""",
         "evaluation_url": "https://example.com/api/evaluate",
         "attachments": []
     }
-    
+
     try:
         print("\n📤 Sending request...")
         print(f"Task: {request_data['task']}")
         print(f"Round: {request_data['round']}")
         print(f"Using secret: {SECRET_KEY[:10]}...")
-        
+
         response = requests.post(API_URL, json=request_data, timeout=120)
-        
+
         print(f"\n📥 Response Status: {response.status_code}")
-        
+
         result = response.json()
         print(f"\n✅ Response:")
         print(json.dumps(result, indent=2))
-        
+
         if result.get('status') == 'success':
             print(f"\n🎉 Success!")
             print(f"Project ID: {result.get('project_id')}")
@@ -78,7 +78,7 @@ The application should be production-ready with clean, well-structured code.""",
         else:
             print(f"\n❌ Error: {result.get('message')}")
             return None
-            
+
     except requests.exceptions.Timeout:
         print(f"\n❌ Request timed out after 120 seconds")
         return None
@@ -94,7 +94,7 @@ def test_round_2(project_id=None):
     print("\n" + "=" * 60)
     print("TESTING ROUND 2: Application Revision")
     print("=" * 60)
-    
+
     request_data = {
         "email": "student@example.com",
         "secret": SECRET_KEY,
@@ -126,22 +126,22 @@ Keep all existing functionality while adding these new features.""",
         "evaluation_url": "https://example.com/api/evaluate",
         "attachments": []
     }
-    
+
     try:
         print("\n📤 Sending revision request...")
         print(f"Task: {request_data['task']}")
         print(f"Round: {request_data['round']}")
         if project_id:
             print(f"Project ID: {project_id}")
-        
+
         response = requests.post(API_URL, json=request_data, timeout=120)
-        
+
         print(f"\n📥 Response Status: {response.status_code}")
-        
+
         result = response.json()
         print(f"\n✅ Response:")
         print(json.dumps(result, indent=2))
-        
+
         if result.get('status') == 'success':
             print(f"\n🎉 Success!")
             print(f"Project ID: {result.get('project_id')}")
@@ -150,7 +150,7 @@ Keep all existing functionality while adding these new features.""",
             print(f"\n💡 Tip: Changes may take 1-2 minutes to appear on GitHub Pages.")
         else:
             print(f"\n❌ Error: {result.get('message')}")
-            
+
     except requests.exceptions.Timeout:
         print(f"\n❌ Request timed out after 120 seconds")
     except requests.exceptions.ConnectionError:
@@ -163,35 +163,35 @@ def test_with_json_file(filepath):
     print("=" * 60)
     print(f"TESTING WITH JSON FILE: {filepath}")
     print("=" * 60)
-    
+
     try:
         with open(filepath, 'r') as f:
             request_data = json.load(f)
-        
+
         # Add secret if not present or if it's a placeholder
         if 'secret' not in request_data or request_data['secret'] in ['...', '', 'your-secret-key-here']:
             request_data['secret'] = SECRET_KEY
             print(f"\n💡 Using SECRET_KEY from .env file")
-        
+
         print("\n📤 Sending request from file...")
         print(f"Task: {request_data.get('task', 'N/A')}")
         print(f"Round: {request_data.get('round', 1)}")
-        
+
         response = requests.post(API_URL, json=request_data, timeout=120)
-        
+
         print(f"\n📥 Response Status: {response.status_code}")
-        
+
         result = response.json()
         print(f"\n✅ Response:")
         print(json.dumps(result, indent=2))
-        
+
         if result.get('status') == 'success':
             print(f"\n🎉 Success!")
             print(f"Repository: {result.get('repo_url')}")
             print(f"Live Site: {result.get('pages_url')}")
         else:
             print(f"\n❌ Error: {result.get('message')}")
-            
+
     except FileNotFoundError:
         print(f"\n❌ File not found: {filepath}")
     except json.JSONDecodeError:
@@ -206,7 +206,7 @@ def check_status(project_id):
     print("\n" + "=" * 60)
     print(f"CHECKING PROJECT STATUS: {project_id}")
     print("=" * 60)
-    
+
     try:
         response = requests.get(f"http://localhost:5000/api/status/{project_id}")
         result = response.json()
@@ -219,19 +219,19 @@ def check_health():
     print("\n" + "=" * 60)
     print("CHECKING SERVER HEALTH")
     print("=" * 60)
-    
+
     try:
         response = requests.get("http://localhost:5000/health")
         result = response.json()
         print(f"\n✅ Server Status: {result.get('status')}")
         print(f"Timestamp: {result.get('timestamp')}")
-        
+
         config = result.get('configured', {})
         print(f"\nConfiguration:")
         print(f"  Anthropic API: {'✓' if config.get('anthropic') else '✗'}")
         print(f"  GitHub Token: {'✓' if config.get('github') else '✗'}")
         print(f"  Secret Key: {'✓' if config.get('secret') else '✗'}")
-        
+
         if not all(config.values()):
             print(f"\n⚠️  Warning: Some configurations are missing. Check your .env file.")
     except requests.exceptions.ConnectionError:
@@ -241,51 +241,4 @@ def check_health():
         print(f"❌ Health check failed: {str(e)}")
 
 if __name__ == "__main__":
-    print("\n🚀 LLM Application Builder - Test Suite\n")
-    
-    # Check if server is running first
-    try:
-        requests.get("http://localhost:5000/health", timeout=2)
-    except:
-        print("❌ Server is not running!")
-        print("💡 Start the server first with: python app.py")
-        print("\nExiting...")
-        exit(1)
-    
-    # Menu
-    print("Select test mode:")
-    print("1. Test Round 1 (Initial Build)")
-    print("2. Test Round 2 (Revision)")
-    print("3. Test Both Rounds")
-    print("4. Test with JSON file (sample_request.json)")
-    print("5. Check project status")
-    print("6. Check server health")
-    
-    choice = input("\nEnter choice (1-6): ").strip()
-    
-    if choice == "1":
-        test_round_1()
-    elif choice == "2":
-        project_id = input("Enter project ID for revision (or press Enter to skip): ").strip()
-        test_round_2(project_id if project_id else None)
-    elif choice == "3":
-        project_id = test_round_1()
-        if project_id:
-            print("\n⏳ Waiting 5 seconds before testing Round 2...")
-            time.sleep(5)
-            test_round_2(project_id)
-    elif choice == "4":
-        filepath = input("Enter JSON file path (default: sample_request.json): ").strip()
-        if not filepath:
-            filepath = "sample_request.json"
-        test_with_json_file(filepath)
-    elif choice == "5":
-        project_id = input("Enter project ID: ").strip()
-        if project_id:
-            check_status(project_id)
-        else:
-            print("❌ Project ID is required")
-    elif choice == "6":
-        check_health()
-    else:
-        print("Invalid choice!")
+    check_health()
