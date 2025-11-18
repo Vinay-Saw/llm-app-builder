@@ -6,6 +6,7 @@ def run_test():
         browser = p.chromium.launch()
         page = browser.new_page()
         try:
+            time.sleep(5)  # Wait for the server to start
             page.goto("http://127.0.0.1:5000")
 
             # Fill out the form
@@ -13,13 +14,14 @@ def run_test():
             page.fill("#secret", "test-secret")
             page.fill("#task", "Test Task")
             page.fill("#brief", "Test Brief")
+            page.fill("#nonce", "test-nonce")
 
             # Submit the form
             page.click("#submitBtn")
 
             # Wait for the error message to appear
-            page.wait_for_selector("h3:has-text('❌ Error')", timeout=30000)
-            print("Test passed: Error message appeared as expected.")
+            page.wait_for_selector("p:has-text('Server configuration error: API keys not set')", timeout=30000)
+            print("Test passed: Correct error message appeared as expected.")
 
         except Exception as e:
             print(f"Test failed: {e}")

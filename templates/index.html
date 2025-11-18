@@ -404,28 +404,13 @@
 
                 const data = await response.json();
 
-                // Hide loading
-                loading.classList.remove('active');
-                submitBtn.disabled = false;
-
-                // Show result
-                result.classList.add('active');
-
                 if (data.status === 'success') {
-                    result.classList.add('success');
-                    result.classList.remove('error');
-                    result.innerHTML = `
-                        <h3>✅ ${data.message}</h3>
-                        <p><strong>Project ID:</strong> ${data.project_id}</p>
-                        <p><strong>Round:</strong> ${data.round}</p>
-                        <div class="result-links">
-                            <a href="${data.repo_url}" target="_blank">📦 View Repository</a>
-                            <a href="${data.pages_url}" target="_blank">🌐 View Live Site</a>
-                        </div>
-                        <p style="margin-top: 15px;"><small>Note: GitHub Pages may take 1-2 minutes to build and deploy.</small></p>
-                    `;
+                    pollProjectStatus(data.project_id);
                 } else {
-                    result.classList.add('error');
+                    // Hide loading on initial error
+                    loading.classList.remove('active');
+                    submitBtn.disabled = false;
+                    result.classList.add('active', 'error');
                     result.classList.remove('success');
                     result.innerHTML = `
                         <h3>❌ Error</h3>
@@ -443,6 +428,60 @@
                 `;
             }
         });
+
+        function pollProjectStatus(projectId) {
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+
+            const intervalId = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/status/${projectId}`);
+                    const data = await response.json();
+
+                    if (data.status === 'completed') {
+                        clearInterval(intervalId);
+
+                        loading.classList.remove('active');
+                        submitBtn.disabled = false;
+                        result.classList.add('active', 'success');
+                        result.classList.remove('error');
+                        result.innerHTML = `
+                            <h3>✅ Build Successful!</h3>
+                            <p>Your application has been built and deployed.</p>
+                            <div class="result-links">
+                                <a href="${data.repo_url}" target="_blank">📦 View Repository</a>
+                                <a href="${data.pages_url}" target="_blank">🌐 View Live Site</a>
+                            </div>
+                            <p style="margin-top: 15px;"><small>Note: GitHub Pages may take 1-2 minutes to build and deploy.</small></p>
+                        `;
+                    } else if (data.status === 'failed') {
+                        clearInterval(intervalId);
+
+                        loading.classList.remove('active');
+                        submitBtn.disabled = false;
+                        result.classList.add('active', 'error');
+                        result.classList.remove('success');
+                        result.innerHTML = `
+                            <h3>❌ Build Failed</h3>
+                            <p>${data.message}</p>
+                        `;
+                    }
+                    // If status is 'processing', do nothing and let the interval continue.
+                } catch (error) {
+                    clearInterval(intervalId);
+
+                    loading.classList.remove('active');
+                    submitBtn.disabled = false;
+                    result.classList.add('active', 'error');
+                    result.classList.remove('success');
+                    result.innerHTML = `
+                        <h3>❌ Error</h3>
+                        <p>Failed to get project status: ${error.message}</p>
+                    `;
+                }
+            }, 3000); // Poll every 3 seconds
+        }
     </script>
 </body>
 </html>
